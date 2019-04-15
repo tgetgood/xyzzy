@@ -1,0 +1,5 @@
+{:deps {com.taoensso/timbre         {:mvn/version "4.10.0"}
+        commons-codec/commons-codec {:mvn/version "1.12"}
+        org.clojure/clojure         {:mvn/version "1.10.0"}
+        org.clojure/core.async      {:mvn/version "0.4.490"}}
+ :paths ["src"]}
