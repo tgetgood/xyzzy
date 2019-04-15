@@ -17,10 +17,10 @@
 (defn- bname [n]
   (str (name n) ".branch"))
 
-(defn- get-branch [n]
+(defn get-branch [n]
   (store/branch (bname n)))
 
-(defn- get-code [n]
+(defn get-code [n]
   (store/file-backed-mem-store "all.code"))
 
 (defn- set-branch! [n]
@@ -37,13 +37,17 @@
     :code (get-code to)}))
 
 (defn combine-branches [& branches]
-  (into {}
-        (map (fn [branch] [branch (store/as-map (get-branch branch))]))
-        branches))
+  {:code (store/as-map (get-code nil))
+   :names
+   (into {}
+         (map (fn [branch] [branch (store/as-map (get-branch branch))]))
+         branches)})
 
-(defn merge-braches [onto & branches]
-  (let [onto (get-branch onto)]
-    (apply merge-with merge (store/as-map onto) (map store/as-map branches))))
+(defn collapse-branches [onto & branches]
+  {:code  (store/as-map (get-code onto))
+   :names (let [onto (get-branch onto)]
+            (apply merge-with merge (store/as-map onto)
+                   (map store/as-map (map get-branch branches))))})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;; Namespaces
@@ -52,7 +56,7 @@
 (defn advance-branch [branch sym ref]
   (store/intern (:names branch) (store/ns-sym sym ref)))
 
-(defn current-ns-map
+(defn ns-map
   "Returns the ns-map of the current branch. The ns map is a map whose keys are
   namespace names (strings) and whose values are maps from var names (again
   strings) to ns entries."

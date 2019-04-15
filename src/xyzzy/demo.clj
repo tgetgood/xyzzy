@@ -1,6 +1,7 @@
 (ns xyzzy.demo
-  (:require [xyzzy.codebase :refer :all]
-            [xyzzy.res.code-gen :as gen]))
+  (:require [clojure.pprint :refer [pprint]]
+            [xyzzy.codebase :refer :all]
+            [xyzzy.res.code-gen :refer [run]]))
 
 (use-branch :master)
 
@@ -15,13 +16,11 @@
 
 (inspect :master :foo/f)
 
-((gen/invoke-by-id "53d13") 4)
-
-
+;; ((gen/invoke-by-id "53d13") 4)
 
 (fork-branch :master :bob)
 
 (defsn :foo/f
   (fn [x y] (+ (* 2 x) y)))
 
-(inspect-branch :master)
+(:names (inspect-branch :master))

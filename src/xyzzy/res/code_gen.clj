@@ -2,7 +2,8 @@
   (:require [clojure.string :as string]
             [clojure.pprint :refer [pprint]]
             [xyzzy.codebase :as codebase]
-            [xyzzy.util :as util]))
+            [xyzzy.codebase.storage :as store]
+            [xyzzy.util :as util] ))
 
 (def internal
   "Reference to this namespace itself."
@@ -87,3 +88,13 @@
   [sym]
   (let [link (codebase/lookup sym)]
     (invoke-by-id (:ref link))))
+
+(defn lookup [branch sym]
+  (get-in branch [(namespace sym) (name sym) :ref]))
+
+(defn run [branch sym & args]
+  (let [branch (if (keyword? branch)
+                 (store/as-map (codebase/get-branch branch))
+                 (:names branch))]
+    (let [id (lookup branch sym)]
+      (apply (invoke-by-id id) args))))
