@@ -3,7 +3,7 @@
             [xyzzy.codebase :refer :all]
             [xyzzy.res.code-gen :refer [run]]))
 
-(use-branch :master)
+(new-branch :master)
 
 (defsn :foo/f
   (fn [x] (* 2 x)))
