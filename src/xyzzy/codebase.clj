@@ -1,7 +1,6 @@
 (ns xyzzy.codebase
   (:refer-clojure :exclude [intern])
   (:require [clojure.string :as string]
-            [xyzzy.codebase.config :as config]
             [xyzzy.codebase.storage :as store]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -165,5 +164,7 @@
       (lookup {:code (get-code branch)} id)))))
 
 (defn inspect-branch [name]
-  {:names (store/as-map (get-branch name))
-   :code  (store/as-map (get-code name))})
+  (store/as-map (get-branch name)))
+
+(defn code-store []
+  (store/as-map (get-code nil)))
