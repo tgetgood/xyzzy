@@ -126,15 +126,6 @@
   `(create-snippet {:form  '~expr
                     :links '~bindings}))
 
-(defn edit
-  "Returns code of snippet in a form, which when edited and evalled, will create
-  a new snippet."
-  [id]
-  (let [id (if (string? id) id (store/lookup (:names @current-branch) id))
-        {:keys [form links]} (store/lookup (:code @current-branch) id)]
-    `(with-bindings ~links
-       ~form)))
-
 (def ^:dynamic *deps* {})
 
 (defmacro with-versions [m & body]
@@ -168,3 +159,17 @@
 
 (defn code-store []
   (store/as-map (get-code nil)))
+
+
+(defn edit
+ "Returns code of snippet in a form, which when edited and evalled, will create
+  a new snippet."
+  [k]
+  (let [id (if (string? k) k (:ref (store/lookup (:names @current-branch) k)))
+        {:keys [form links]} (store/lookup (:code @current-branch) id)]
+    (if (empty? links)
+      `(defsn ~k
+         ~form)
+      `(with-versions ~links
+         (defsn ~k
+           ~form)))))
