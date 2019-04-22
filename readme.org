@@ -1,0 +1,88 @@
+#+TITLE: Clojure North Demo
+
+This is the project that I showed in my talk at Clojure North.
+
+This repo is a chunk of [[https://github.com/tgetgood/ubik][another project]] torn out by cut and paste. My original
+intention was to demo Ubik, but that turned out to be far too much for one talk
+— or possibly too much for me to pull into one thread of reasoning.
+
+* Requirements
+	The xyzzy.core file is intended to be used as a scratchpad. You'll need editor
+	support, particularly =cider-eval-print-last-sexp= and
+	=cider-eval-last-sexp-and-replace= or their equivalents in your environment.
+
+	The core reason for this is that code no longer lives in text files — well it
+	does, but you're not supposed to know that, it's an implementation detail — so
+	you can't just browse through the text files using your human reasoning to
+	pick out the structure of the code. Instead you need the editor to be able to
+	run code that helps you write more code, which when executed helps you write
+	more code, which when executed...
+
+* Use
+	The =xyzzy.core= namespace imports everything you need to get started.
+
+	To define code:
+
+#+BEGIN_SRC clojure:
+(use-branch :master)
+
+(defsn :my.project/foo
+	(fn [x] (* 2 x)))
+
+(with-versions {f :my.projects/foo}
+	(defsn :bar
+		(fn [x] (f (inc x)))))
+
+(with-versions {thing "abc123..."} ; <= needs to be an existing hash
+	(defsn :core/bar
+		(fn [x] (conj thing x))))
+#+END_SRC:
+
+	To look at what a given name or hash resolves to, use =inspect=.
+
+	To edit existing code, use the =edit= macro. Given a name it will look it up
+	in the current branch, and return an sexp equivelant to that which defined
+	it.
+
+	Adding code to the codebase is idempotent, so evaluating this as is does
+	nothing. If, however, you then change that form and evaluate it, a new snippet
+	will be defined in the codebase and the current branch will be updated with
+	the new binding.
+
+	This is where the repl starts to break down. The ability to eval code, edit
+	the result, and then eval that is really useful. This works in the repl, but
+	you need to cut and paste the template. =cider-scratch= is a really cool
+	tool. I'm only realising how sophisticated cider really is now that I can no
+	longer fall back on old habits.
+
+	If anyone actually uses this and has questions, I'll be happy to elaborate.
+* Caveats
+** Side Effects
+	 This style of programming seems to work very nicely for pure functions and
+	 quickly become kludgy as you start doing anything real. I don't have a
+	 solution for this yet, but I'm working on it.
+** Hash Collisions
+	 There's an assumption in this implementation that hashes never collide. This
+	 is absurd, because I'm using 20 bit hashes. Of course they're going to
+	 collide. But even Git is started to have issues with SHA1. I don't think it's
+	 reasonable to assume any hash will be collision free indefinitely, there
+	 needs to be some sort of upgrade scheme, but I'm still searching for work on
+	 this.
+** No Stack Traces
+	 Because I'm storing code in a database, I don't pass it to the compiler
+	 directly, so stack traces are just a bunch of "at NO_SOURCE_FILE" frames.
+
+	 I think stack traces are a poor fit to understand functional programs. They
+	 were created in the context of and work very well for structured proceedural
+	 programs. But fundamentally they're about keeping track of jumps sites which
+	 abstraction conflicts with the basic idea of functional programs as abtracted
+	 from the hardware.
+
+	 I don't yet have a better solution, but I don't want to spend my time
+	 building a bag on the side of a bad solution.
+
+* License
+	Copyright © 2019 Thomas Getgood
+
+	Distributed under the Eclipse Public License either version 1.0 or (at your
+	option) any later version.
