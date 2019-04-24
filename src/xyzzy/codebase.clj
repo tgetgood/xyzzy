@@ -135,12 +135,12 @@
 
 (defmacro defsn [name form]
   `(let [snip# (create-snippet {:links *deps* :form '~form})
-         hash# (:sha1 (meta snip#))]
+         hash# (:hash (meta snip#))]
      (advance-branch @current-branch ~name hash#)
      snip#))
 
 (defn clean [{:keys [form links] :as o}]
-  {:sha1 (:sha1 (meta o))
+  {:hash (:hash (meta o))
    :dependencies links
    :form form})
 

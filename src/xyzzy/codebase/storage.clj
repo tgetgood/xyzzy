@@ -1,5 +1,5 @@
 (ns xyzzy.codebase.storage
-  (:refer-clojure :exclude [intern])
+  (:refer-clojure :exclude [intern hash])
   (:require [clojure.java.io :as io])
   (:import java.io.File
            org.apache.commons.codec.digest.DigestUtils))
@@ -30,8 +30,12 @@
       (assoc-in acc [ens ename] entry)
       (update acc ens dissoc ename))))
 
-(defn sha1 [x]
-  (apply str (take 5 (DigestUtils/sha1Hex (str x)))))
+(defn hash
+  "Cannonical hash function. Currently just a sha of the (str x), but I think
+  we'd gain a lot by replacing that with structured hashing. Basically a merkle
+  dag. "
+  [x]
+  (DigestUtils/sha3_256Hex (str x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Protocols
@@ -65,9 +69,9 @@
   ;; This will fall over very easily. We need indicies. Hell, we need a database.
   Store
   (intern [this snippet]
-    (if-let [res (lookup this (sha1 snippet))]
+    (if-let [res (lookup this (hash snippet))]
       res
-      (let [meta {:time (now) :sha1 (sha1 snippet)}
+      (let [meta  {:time (now) :hash (hash snippet)}
             entry (assoc meta :snippet snippet)]
         (append-line filename entry)
         (with-meta snippet meta))))
@@ -76,21 +80,21 @@
       (let [entry (->> rdr
                        line-seq
                        (map read-string)
-                       (filter #(= (:sha1 %) id))
+                       (filter #(= (:hash %) id))
                        first)]
         (when entry
           (with-meta (:snippet entry) (dissoc entry :snippet))))))
 
   ReverseLookup
   (by-value [this snip]
-    (lookup this (sha1 snip)))
+    (lookup this (hash snip)))
 
   ValueMap
   (as-map [_]
     (with-open [rdr (io/reader filename)]
       (into {}
             (comp (map read-string)
-                  (map (fn [x] [(:sha1 x) (with-meta (:snippet x)
+                  (map (fn [x] [(:hash x) (with-meta (:snippet x)
                                             (dissoc x :snippet))])))
             (line-seq rdr)))))
 
@@ -100,18 +104,18 @@
         cache (atom (as-map store))]
     (reify Store
       (intern [_ snippet]
-        (let [hash (sha1 snippet)]
+        (let [hash (hash snippet)]
           (if-let [entry (get @cache hash)]
             entry
             (let [snippet (intern store snippet)]
-              (swap! cache assoc (:sha1 (meta snippet)) snippet)
+              (swap! cache assoc (:hash (meta snippet)) snippet)
               snippet))))
       (lookup [_ id]
         (get @cache id))
 
       ReverseLookup
       (by-value [this snip]
-        (let [hash (if-let [sha (:sha1 (meta snip))] sha (sha1 snip))]
+        (let [hash (if-let [sha (:hash (meta snip))] sha (hash snip))]
           (lookup this hash)))
 
       ValueMap
