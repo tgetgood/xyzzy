@@ -41,8 +41,7 @@ intention was to demo Ubik, but that turned out to be far too much for one talk
 	To look at what a given name or hash resolves to, use =inspect=.
 
 	To edit existing code, use the =edit= macro. Given a name it will look it up
-	in the current branch, and return an sexp equivelant to that which defined
-	it.
+	in the current branch, and return a sexp equivelant to that which defined it.
 
 	Adding code to the codebase is idempotent, so evaluating this as is does
 	nothing. If, however, you then change that form and evaluate it, a new snippet
@@ -64,7 +63,7 @@ intention was to demo Ubik, but that turned out to be far too much for one talk
 ** Hash Collisions
 	 There's an assumption in this implementation that hashes never collide. This
 	 is absurd, because I'm using 20 bit hashes. Of course they're going to
-	 collide. But even Git is started to have issues with SHA1. I don't think it's
+	 collide. But even Git has started to have issues with SHA1. I don't think it's
 	 reasonable to assume any hash will be collision free indefinitely, there
 	 needs to be some sort of upgrade scheme, but I'm still searching for work on
 	 this.

@@ -33,7 +33,7 @@
 (defn hash
   "Cannonical hash function. Currently just a sha of the (str x), but I think
   we'd gain a lot by replacing that with structured hashing. Basically a merkle
-  dag. "
+  dag."
   [x]
   (DigestUtils/sha3_256Hex (str x)))
 
