@@ -44,6 +44,7 @@
 (defprotocol AppendOnlyLog
   ;; REVIEW: Is retraction an inherent part of append only storage?
   ;; It is required for monotonicity...
+  ;; REVIEW: 2) isn't retraction a property of Stores, rather than Logs?
   (log [this] "Returns the entire list of transactions")
   (retract [this entry] "Retracts this entry from the log."))
 
