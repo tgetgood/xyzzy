@@ -5,6 +5,9 @@
   "Applies f to each value in map m, returning a map with the same keys, and
   transformed values."
   [f m]
+  ;; REVIEW: (juxt key (comp f val)) is more transparent than
+  ;; (fn [[k v]] [k (f v)]), but it's also less clear. I have to think more
+  ;; about the downsides of lambdas.
   (into {} (map (fn [[k v]] [k (f v)])) m))
 
 (def logfile
