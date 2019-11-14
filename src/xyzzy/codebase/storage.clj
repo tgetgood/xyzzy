@@ -1,8 +1,8 @@
 (ns xyzzy.codebase.storage
   (:refer-clojure :exclude [intern hash])
-  (:require [clojure.java.io :as io])
-  (:import java.io.File
-           org.apache.commons.codec.digest.DigestUtils))
+  (:require [clojure.java.io :as io]
+            [hasch.core :as h])
+  (:import java.io.File))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
@@ -35,7 +35,7 @@
   we'd gain a lot by replacing that with structured hashing. Basically a merkle
   dag."
   [x]
-  (DigestUtils/sha3_256Hex (str x)))
+  (h/hash->str (h/edn-hash x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Protocols

@@ -1,13 +1,10 @@
 (ns xyzzy.codebase
-  (:refer-clojure :exclude [intern])
+  (:refer-clojure :exclude [intern ns-map])
   (:require [clojure.string :as string]
             [xyzzy.codebase.storage :as store]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;; Branching
-;;;;;
-;;;;; Currently there is only one branch, which is to say no branching. That's a
-;;;;; problem. but far from my most pressing.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defonce current-branch

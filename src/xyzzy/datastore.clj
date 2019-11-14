@@ -3,6 +3,7 @@
   (:require [hasch.core :as h]))
 
 (defprotocol DataStore
+  ;; This this is Buzz, in principle, but for now, it's just a hashmap.
   (intern [this value]
     "Store a value and return a unique key which can be used to look it up
     again.")
@@ -15,18 +16,113 @@
     been saved, the right to be forgotten, et al.. The store is intended to be
     monotonic. In fact, this method of deletion is probably too easy."))
 
-(defprotocol NameMap
-  (tag [this name key]
-    "Returns a new NameMap in which `name` refers to `key`.")
-  (untag [this name]
-    "Returns a new NameMap in which `name` no longer resolves.")
-  (resolve [this name]
-    "Return the key to which `name` refers.")
-  (as-of [this time-or-version-id]
-    "Returns this NameMap is it looked at a previous time.")
-  (version [this]
-    "Returns a serial version ID which can be used to time travel back to
-    now."))
+(comment
+  (defprotocol Buzz
+    (merge [this publication])
+    (publish [this hash])))
+
+(defn resolve
+  "References are destructings of hashes. A hash always points to a value, so
+  resolution is always straight forward (if arbitrarily indirect)."
+  [store reference]
+  (comment "example reference"
+           {{{:thing.core/f :x.y/z} :org.me.names} "abc123f..."}
+           "will be equivalent to (metaphorically speaking)"
+           (-> "abc123"
+               (resolve :org.me/names)
+               (resolve :x.y/z)
+               (resolve :thing.core/f))))
+
+
+(def document-format
+  {:meta {}
+   :content "abc123"})
+
+;; REVIEW: A NameMap is just a map with metadata. Should there be a separate API
+;; for this or just another data format?
+;;
+;; This is a deeper question: should I base more or less everything on protocols
+;; (data formats) or APIs? When I phrase it like that, it's a no brainer...
+
+(def name-map-format
+  {:names {
+           ;all names as ns qualified key - value pairs
+           }
+   :version :? ; this is relative to the publisher...
+   :previous [122 31 77 218 '...]
+   })
+
+;; A name map is more than a map, it's a sequence of maps related to each other
+;; by evolution. It's a value that both changes over time and keeps track of its
+;; history. Name maps can branch as well.
+
+(def example-document
+  {:content [:doc-markup-tag
+             "Some people agree with Edgar when he says: "
+             {:reference {:name :poe-quotes.hardcore/amontillado
+                          :name-map "abc123..."}}
+             ]
+   :meta {:hash-table {"abc123..." {:names {:poe-quotes.hardcore/amontillado
+                                            "def678..."}
+                                    :author {:name "" :pub-key ""}
+                                    ;; The author here can track forking. Anyone
+                                    ;; can modify anything they can see, so
+                                    ;; forking has to be transparent.
+                                    :previous "abc122..."}
+                       "def678..." "some edn value, including, possibley,
+                       another doc, complete with another name-map, references,
+                       etc.."}}})
+
+;; Naming name maps is a higher order thing. Basically, the name of a name map
+;; is an entry in another name map. Thus if a doc wants to combine names from
+;; different name maps in one doc, we need indirect references. Maybe something
+;; like:
+
+(def example-rehash-doc
+  {:content [:start-here
+             {:stuff {:reference {:in {:alice.names.code/experimental "a1"}
+                                  :reference {:thing.core/f
+                                              :alice.names.code/experimental}}}}]
+   :meta {:... '...}})
+
+;; Now, imagine that Alice publishes a new set of names
+
+{:names {:thing.core/f "cc"}
+ :author :alice
+ :previous "a1"}
+
+;; If you're watching her publication channel --- for lack of a better term ---
+;; then a document viewer (the distinction between viewer and editor has to go
+;; with the distinction between reader and author), will be able to see that the
+;; name-map you've refered to as (named) :alice.names.core/experimental has a
+;; new version, and in that new version, the name you're refering, thing.core/f,
+;; has changed. The viewer has to provide the option to see the difference that
+;; new name will make to everything downstream of where you are now.
+;;
+;; Recursive, but explicit, propagation of changes is important for evolution
+;; without breakage. Well, lack of breakage is impossible in general, but making
+;; the recursive changeset explicit means that any breaking changes will break
+;; the dev environment immediately, or conversely, if local tests pass, then the
+;; same tests will pass in any environment.
+;;
+;; That's the dream
+
+;; Going back to a previous version of names just means tracing the history
+;; chain backwards. Reasoning about who could have meant what, when, requires
+;; both timestamps by publishers, and recording the time that we (locally)
+;; became aware of the new published content.
+
+;; Documents which contain all referents all the way down, are
+;; publishable. Short hashes are unambiguous, because they point to values
+;; within the doc. All that's necessary is that as new refs are created, they
+;; are long enough to be unambiguous.
+
+;; So what's the point of the global store?
+
+
+;; When you publish a document, everything is static. No names. What about
+;; publishing a namemap? Here, the names correspond directly to concrete values,
+;; so the map of names is a value, but the map also contains a history.
 
 ;; A document is a map (a datum) containing keys :content, and :meta. :meta, in
 ;; turn contains references to the document from which the current one was
@@ -65,10 +161,3 @@
 
 ;; If a publisher asks that a document be deleted, it's up to each person who
 ;; has a copy of that doc to decide. It has to be that way.
-
-(defn mem-datastore [init]
-  (let [data (atom init)]
-    (reify DataStore
-      (intern [this value]
-        (let [hash (h/edn-hash value)]
-          ())))))
