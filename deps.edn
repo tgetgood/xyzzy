@@ -3,7 +3,6 @@
         io.replikativ/hasch         {:mvn/version "0.3.6"}
         org.clojure/clojure         {:mvn/version "1.10.0"}
         org.clojure/core.async      {:mvn/version "0.4.490"}
-
         org.clojure/spec-alpha2 {:git/url
                                  "https://github.com/clojure/spec-alpha2.git"
                                  :sha "cef04589198e18ac81b8de2142921e82b4dece48"}

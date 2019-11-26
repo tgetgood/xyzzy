@@ -1,9 +1,31 @@
 (ns xyzzy.datastore
-  (:refer-clojure :exclude [intern contains? resolve])
-  (:require [hasch.core :as h]))
+  (:refer-clojure :exclude [intern contains? resolve read-string])
+  (:require [clojure.edn :as edn]
+            [hasch.core :as h]))
+
+(def hex-chars
+  (into #{\a \b \c \d \e \f}
+        (map (comp first str))
+        (range 10)))
+
+(defn default-ref-reader [s]
+  {:pre [(symbol? s)
+         (every? #(clojure.core/contains? hex-chars %) (name s))]}
+  (with-meta s {::reference? true}))
+
+(def data-readers
+  {'ref default-ref-reader})
+
+(set! *default-data-reader-fn* tagged-literal)
+
+(defn read-string [s]
+  (binding [*read-eval* false
+            *data-readers* (merge *data-readers* data-readers)]
+    (clojure.core/read-string s)))
+
 
 (defprotocol DataStore
-  ;; This this is Buzz, in principle, but for now, it's just a hashmap.
+  ;; This is Buzz, in principle, but for now, it's just a hashmap.
   (intern [this value]
     "Store a value and return a unique key which can be used to look it up
     again.")
