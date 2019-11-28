@@ -1,1 +1,1 @@
-{ref xyzzy.datastore/default-ref-reader}
+{ref xyzzy.datastore/read-ref}

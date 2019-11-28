@@ -1,5 +1,5 @@
 (ns xyzzy.datastore
-  (:refer-clojure :exclude [intern contains? resolve read-string])
+  (:refer-clojure :exclude [intern contains? resolve hash ref])
   (:require [clojure.edn :as edn]
             [hasch.core :as h]))
 
@@ -8,21 +8,52 @@
         (map (comp first str))
         (range 10)))
 
-(defn default-ref-reader [s]
-  {:pre [(symbol? s)
-         (every? #(clojure.core/contains? hex-chars %) (name s))]}
-  (with-meta s {::reference? true}))
+(deftype Ref [bytes]
+  Object
+  (toString [_]
+    (str "#ref \"" (h/hash->str bytes) "\"")))
 
+(defn- print-ref
+  [^Ref ref ^java.io.Writer w]
+  (.write w (.toString ref)))
+
+(defmethod print-method Ref
+  [^Ref r ^java.io.Writer w]
+  (print-ref r w))
+
+(defmethod print-dup Ref
+  [^Ref r ^java.io.Writer w]
+  (print-ref r w))
+
+(defn ref [bytes]
+  (Ref. bytes))
+
+(defn read-ref [hex]
+  (ref (map #(Integer/parseInt (apply str %) 16) (partition 2 hex))))
+
+;; REVIEW: What if you want to refer to a constant from another doc? Hashing
+;; 31.77 will generally result in bloat. Do we want a lit-ref literal where we
+;; can refer to an expression directly by value while keeping provenance info,
+;; but without putting it in the global store, or do we want to refer to such
+;; quantities by relative queries --- spectre like paths --- into a larger
+;; document? Transclusion should not require creating new ddcuments in either
+;; case, the link itself should be the thing created. A first class thing. So is
+;; the link a document?
 (def data-readers
-  {'ref default-ref-reader})
+  {'ref read-ref})
 
-(set! *default-data-reader-fn* tagged-literal)
+(defn hash
+  "Hashes here are infinite lazy sequences of bytes as in Bagwell(2001), but
+  whereas Bagwell truncates the stream and buckets collisions after a certain
+  point, I'm taking as many bytes as necessary to not have a collision. Note:
+  this is less performance than Bagwell's optimisation, and requires a hash
+  function that is guaranteed to eventually distinguish two non-identical edn
+  expressions.
+  FIXME: hashes only produce 512 bits at present."
+  [x]
+  (h/edn-hash x))
 
-(defn read-string [s]
-  (binding [*read-eval* false
-            *data-readers* (merge *data-readers* data-readers)]
-    (clojure.core/read-string s)))
-
+(def bytes->hex h/hash->str)
 
 (defprotocol DataStore
   ;; This is Buzz, in principle, but for now, it's just a hashmap.
@@ -183,3 +214,10 @@
 
 ;; If a publisher asks that a document be deleted, it's up to each person who
 ;; has a copy of that doc to decide. It has to be that way.
+
+(defn -main []
+  (set! *read-eval* false)
+  (set! *default-data-reader-fn* tagged-literal)
+  (set! *warn-on-reflection* true)
+  (when (not (clojure.core/contains? *data-readers* 'ref))
+    (set! *data-readers* (merge *data-readers* data-readers))))
