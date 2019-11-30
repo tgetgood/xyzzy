@@ -149,7 +149,6 @@
   (log [_]
     history)
   (retract [_ entry]
-
     (let [entry (-> entry
                     fill-branch-entry
                     (assoc :op :retract))]

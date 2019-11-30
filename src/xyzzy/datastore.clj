@@ -1,5 +1,5 @@
 (ns xyzzy.datastore
-  (:refer-clojure :exclude [intern contains? resolve hash ref])
+  (:refer-clojure :exclude [resolve hash ref intern])
   (:require [clojure.edn :as edn]
             [hasch.core :as h]))
 
@@ -28,7 +28,15 @@
 (defn ref [bytes]
   (Ref. bytes))
 
+(defn ref? [x]
+  (instance? Ref x))
+
 (defn read-ref [hex]
+  {:pre [(string? hex)
+         (every? hex-chars hex)]}
+  ;; FIXME: I don't like using stings for refs --- strings are only suitable for
+  ;; encoding natural language --- but '07bf is not a valid symbol; it's a
+  ;; malformed number...
   (ref (map #(Integer/parseInt (apply str %) 16) (partition 2 hex))))
 
 ;; REVIEW: What if you want to refer to a constant from another doc? Hashing
@@ -46,33 +54,14 @@
   "Hashes here are infinite lazy sequences of bytes as in Bagwell(2001), but
   whereas Bagwell truncates the stream and buckets collisions after a certain
   point, I'm taking as many bytes as necessary to not have a collision. Note:
-  this is less performance than Bagwell's optimisation, and requires a hash
+  this is less performant than Bagwell's optimisation, and requires a hash
   function that is guaranteed to eventually distinguish two non-identical edn
   expressions.
   FIXME: hashes only produce 512 bits at present."
+  ;; REVIEW: Would it be enough to just add a salt and rehash each time you need
+  ;; another 512 bits?
   [x]
   (h/edn-hash x))
-
-(def bytes->hex h/hash->str)
-
-(defprotocol DataStore
-  ;; This is Buzz, in principle, but for now, it's just a hashmap.
-  (intern [this value]
-    "Store a value and return a unique key which can be used to look it up
-    again.")
-  ;; REVIEW: Can you store nil in the datastore? Nil is a value: specifically
-  ;; the unique empty value. Nothing. So probably yes.
-  (lookup [this key])
-  (contains? [this value]) ;; REVIEW: true/false, or key/nil?
-  (permenantly-delete! [this key value]
-    "This should only ever be used in the context of secrets that shouldn't have
-    been saved, the right to be forgotten, et al.. The store is intended to be
-    monotonic. In fact, this method of deletion is probably too easy."))
-
-(comment
-  (defprotocol Buzz
-    (merge [this publication])
-    (publish [this hash])))
 
 (defn resolve
   "References are destructings of hashes. A hash always points to a value, so
@@ -87,9 +76,6 @@
                (resolve :thing.core/f))))
 
 
-(def document-format
-  {:meta {}
-   :content "abc123"})
 
 ;; REVIEW: A NameMap is just a map with metadata. Should there be a separate API
 ;; for this or just another data format?
