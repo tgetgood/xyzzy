@@ -1,14 +1,15 @@
 (ns xyzzy.collision
   (:require [clojure.core.reducers :as r]))
 
-(defn collision [num hash-size]
-  (let [m (bigdec (Math/pow 2 hash-size))]
-    (with-precision 100
-      (- 1M (r/reduce * 1 (r/map #(/ (- m %) m) (range num)))))))
+(defn p-no-collisions
+  "Returns the probability that we get `items` things into a hash-table of size
+  2^`hash-size` without any collisions."
+  [items hash-size]
+  (let [N (- (Math/pow 2 (- hash-size)))]
+    (inc (Math/expm1 (* (dec items) (Math/log1p N))))))
 
-;; Way faster(~35X), but a tad less precise.
-(defn logc [num size]
-  (let [hs (Math/pow 2 size)
-        diff (* size (Math/log 2))
-        logs (r/reduce + (r/map #(- (Math/log (- hs %)) diff) (range num)))]
-    (- 1 (Math/exp logs))))
+(defn ex-collision
+  "Returns the expected number of collisions when putting `items` items into a
+  hash table of size 2^`hash-size`."
+  [items hash-size]
+  (* items (- 1 (p-no-collisions items hash-size))))
